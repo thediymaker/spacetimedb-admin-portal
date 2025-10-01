@@ -310,6 +310,18 @@ This app is optimized for minimal API usage on Supabase, Vercel, and other meter
 - **Batch Operations**: Use bulk endpoints when available
 - **Conditional Fetching**: Queries disabled until required data is available (`enabled` flag)
 
+## Screenshots
+
+Below are a few screenshots of the SpacetimeDB Admin Portal:
+
+![Dashboard overview](./screenshots/image1.png)
+
+![Table data view](./screenshots/image2.png)
+
+![Schema exploration](./screenshots/image3.png)
+
+![Logs and admin tools](./screenshots/image4.png)
+
 ### Security
 
 - Keep `SPACETIME_AUTH_TOKEN` in `.env.local` (never commit)
