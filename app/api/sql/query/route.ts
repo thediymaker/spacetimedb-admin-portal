@@ -46,7 +46,14 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[SQL API] Error response:', errorText);
+      console.error('[SQL API] Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        url,
+        sql: sql.substring(0, 100),
+        errorText,
+        hasAuthToken: !!SPACETIME_AUTH_TOKEN,
+      });
       
       // Check for authorization errors on DML operations
       if ((isDeleteQuery || sqlLower.startsWith('insert') || sqlLower.startsWith('update')) && 

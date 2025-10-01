@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const SPACETIME_HTTP_API = process.env.NEXT_PUBLIC_SPACETIME_HTTP_API!;
 const SPACETIME_MODULE = process.env.NEXT_PUBLIC_SPACETIME_MODULE!;
+const SPACETIME_AUTH_TOKEN = process.env.SPACETIME_AUTH_TOKEN;
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,17 +24,61 @@ export async function POST(request: NextRequest) {
     // POST /database/{database}/call/{reducer_name}
     const url = `${SPACETIME_HTTP_API}/${SPACETIME_MODULE}/call/${reducer}`;
 
+    // Build headers with optional auth token
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    
+    // Add auth token if available (required for admin/owner operations)
+    if (SPACETIME_AUTH_TOKEN) {
+      headers['Authorization'] = `Bearer ${SPACETIME_AUTH_TOKEN}`;
+    }
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(params),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('[Reducer Call API] Error response:', errorText);
+      console.error('[Reducer Call API] Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        reducer,
+        errorText,
+        hasAuthToken: !!SPACETIME_AUTH_TOKEN,
+      });
+      
+      // Check for authentication/authorization errors
+      if (errorText.includes('Admin') || 
+          errorText.includes('admin') || 
+          errorText.includes('Owner') || 
+          errorText.includes('owner') ||
+          errorText.includes('require') ||
+          errorText.includes('authorized')) {
+        
+        if (!SPACETIME_AUTH_TOKEN) {
+          return NextResponse.json(
+            {
+              error: 'Authentication required',
+              details: 'This reducer requires authentication. Please set SPACETIME_AUTH_TOKEN environment variable with your SpacetimeDB auth token.',
+              needsAuth: true,
+            },
+            { status: 401 }
+          );
+        }
+        
+        return NextResponse.json(
+          {
+            error: 'Permission denied',
+            details: errorText,
+            needsPermission: true,
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
           error: `Failed to call reducer: ${response.statusText}`,
